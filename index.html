@@ -272,22 +272,23 @@
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            width: 36px;
-            height: 36px;
+            padding: 8px 16px;
             border-radius: 8px;
-            background-color: var(--grist-color-card-bg);
-            color: var(--grist-color-primary);
-            border: 1px solid var(--grist-color-border);
+            background-color: var(--grist-color-primary);
+            color: white;
+            border: 1px solid var(--grist-color-primary-hover);
             text-decoration: none;
-            font-size: 18px;
+            font-size: 14px;
             font-weight: bold;
             transition: all 0.2s;
             margin-left: auto; /* Push to right */
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
         
         .btn-grist-link:hover {
-            background-color: var(--grist-color-primary-light);
-            border-color: var(--grist-color-primary);
+            background-color: var(--grist-color-primary-hover);
+            box-shadow: 0 4px 6px rgba(0,0,0,0.15);
+            transform: translateY(-1px);
         }
 
         /* Loading state */
@@ -308,6 +309,9 @@
                 <div class="toggle-container">
                     <button id="btn-contacts" class="toggle-btn active" onclick="setMode('contacts')">Contacts</button>
                     <button id="btn-organisations" class="toggle-btn" onclick="setMode('organisations')">Organisations</button>
+                    <button id="btn-events" class="toggle-btn" onclick="setMode('events')">Events</button>
+                    <button id="btn-countries" class="toggle-btn" onclick="setMode('countries')">Countries</button>
+                    <button id="btn-languages" class="toggle-btn" onclick="setMode('languages')">Languages</button>
                 </div>
                 
                 <div class="search-container">
@@ -330,7 +334,7 @@
 
     <script>
         // --- DEVELOPER NOTE: ALWAYS UPDATE THIS VERSION TAG ON EVERY SAVE ---
-        const WIDGET_VERSION = "1.1.2";
+        const WIDGET_VERSION = "1.1.3";
         console.log(`[Grist Landing Page] Widget Version: ${WIDGET_VERSION}`);
 
         // --- Global State ---
@@ -338,13 +342,19 @@
         let data = {
             contacts: [],
             organisations: [],
-            contactOrganisations: []
+            contactOrganisations: [],
+            events: [],
+            countries: [],
+            languages: []
         };
         let filteredData = [];
 
         // --- DOM Elements ---
         const btnContacts = document.getElementById('btn-contacts');
         const btnOrgs = document.getElementById('btn-organisations');
+        const btnEvents = document.getElementById('btn-events');
+        const btnCountries = document.getElementById('btn-countries');
+        const btnLanguages = document.getElementById('btn-languages');
         const searchInput = document.getElementById('search-input');
         const gridContainer = document.getElementById('grid-container');
         const landingView = document.getElementById('landing-view');
@@ -365,11 +375,17 @@
                 const contactsRaw = await grist.docApi.fetchTable('Contacts');
                 const orgsRaw = await grist.docApi.fetchTable('Organisations');
                 const contactOrgsRaw = await grist.docApi.fetchTable('ContactOrganisations');
+                const eventsRaw = await grist.docApi.fetchTable('Events');
+                const countriesRaw = await grist.docApi.fetchTable('Countries');
+                const languagesRaw = await grist.docApi.fetchTable('Languages');
 
                 // Normalize data structure for easier rendering
                 data.contacts = formatGristData(contactsRaw).sort((a, b) => (a.Contact_ || '').localeCompare(b.Contact_ || ''));
                 data.organisations = formatGristData(orgsRaw).sort((a, b) => (a.Organisation_ || '').localeCompare(b.Organisation_ || ''));
                 data.contactOrganisations = formatGristData(contactOrgsRaw);
+                data.events = formatGristData(eventsRaw).sort((a, b) => (a.Event_Summary || a.Event_ || '').localeCompare(b.Event_Summary || b.Event_ || ''));
+                data.countries = formatGristData(countriesRaw).sort((a, b) => (a.Country || '').localeCompare(b.Country || ''));
+                data.languages = formatGristData(languagesRaw).sort((a, b) => (a.Language || '').localeCompare(b.Language || ''));
 
                 loadingIndicator.style.display = 'none';
                 
@@ -423,14 +439,22 @@
             currentMode = mode;
             
             // Update Buttons
+            [btnContacts, btnOrgs, btnEvents, btnCountries, btnLanguages].forEach(btn => btn.classList.remove('active'));
             if (mode === 'contacts') {
                 btnContacts.classList.add('active');
-                btnOrgs.classList.remove('active');
                 searchInput.placeholder = "Search contacts by name or email...";
-            } else {
+            } else if (mode === 'organisations') {
                 btnOrgs.classList.add('active');
-                btnContacts.classList.remove('active');
                 searchInput.placeholder = "Search organisations by name or type...";
+            } else if (mode === 'events') {
+                btnEvents.classList.add('active');
+                searchInput.placeholder = "Search events...";
+            } else if (mode === 'countries') {
+                btnCountries.classList.add('active');
+                searchInput.placeholder = "Search countries...";
+            } else if (mode === 'languages') {
+                btnLanguages.classList.add('active');
+                searchInput.placeholder = "Search languages...";
             }
 
             // Reset Search and Render
@@ -475,10 +499,17 @@
                         const name = `${row.First_Name_ || ''} ${row.Last_Name || ''}`.toLowerCase();
                         const email = (row.Email_ || '').toLowerCase();
                         return name.includes(query) || email.includes(query);
-                    } else {
+                    } else if (currentMode === 'organisations') {
                         const orgName = (row.Organisation_ || '').toLowerCase();
                         const type = (row.Type_ || '').toLowerCase();
                         return orgName.includes(query) || type.includes(query);
+                    } else if (currentMode === 'events') {
+                        const eventName = (row.Event_Summary || row.Event_ || '').toLowerCase();
+                        return eventName.includes(query);
+                    } else if (currentMode === 'countries') {
+                        return (row.Country || '').toLowerCase().includes(query);
+                    } else if (currentMode === 'languages') {
+                        return (row.Language || '').toLowerCase().includes(query);
                     }
                 });
             }
@@ -503,16 +534,31 @@
                         <div class="grid-item-title">${fullName}</div>
                         <div class="grid-item-subtitle">${row.Email_ || 'No email provided'}</div>
                     `;
-                    item.onclick = () => renderCard(row);
-                } else {
+                } else if (currentMode === 'organisations') {
                     const orgName = row.Organisation_ || 'Unknown Organisation';
                     item.innerHTML = `
                         <div class="grid-item-title">${orgName}</div>
                         <div class="grid-item-subtitle">${row.Type_ || 'No type specified'}</div>
                     `;
-                    item.onclick = () => renderCard(row);
+                } else if (currentMode === 'events') {
+                    const eventName = row.Event_Summary || row.Event_ || 'Unknown Event';
+                    item.innerHTML = `
+                        <div class="grid-item-title">${eventName}</div>
+                        <div class="grid-item-subtitle">${row.Track_ || 'No track'}</div>
+                    `;
+                } else if (currentMode === 'countries') {
+                    item.innerHTML = `
+                        <div class="grid-item-title">${row.Country || 'Unknown Country'}</div>
+                        <div class="grid-item-subtitle">Country</div>
+                    `;
+                } else if (currentMode === 'languages') {
+                    item.innerHTML = `
+                        <div class="grid-item-title">${row.Language || 'Unknown Language'}</div>
+                        <div class="grid-item-subtitle">Language</div>
+                    `;
                 }
 
+                item.onclick = () => renderCard(row);
                 gridContainer.appendChild(item);
             });
         }
@@ -536,8 +582,8 @@
             let html = '';
             
             // Extract the magic Grist jump link
-            const linkUrl = extractGristLink(row.Link);
-            const linkBtn = linkUrl ? `<a href="${linkUrl}" target="_top" class="btn-grist-link" title="Open Full Record in Grist">↗</a>` : '';
+            const linkUrl = extractGristLink(row.Link || row.E_Link || row.C_Link || row.OG_Link);
+            const linkBtn = linkUrl ? `<a href="${linkUrl}" target="_top" class="btn-grist-link" title="Open Full Record in Grist">Open in Grist ↗</a>` : '';
 
             if (currentMode === 'contacts') {
                 const fullName = row.Contact_ || `${row.First_Name_ || ''} ${row.Last_Name || ''}`.trim() || 'Unknown Contact';
@@ -580,7 +626,7 @@
                         ${linkedOrgsHtml}
                     </div>
                 `;
-            } else {
+            } else if (currentMode === 'organisations') {
                 const orgName = row.Organisation_ || 'Unknown Organisation';
                 const initial = orgName.charAt(0).toUpperCase();
 
@@ -621,6 +667,58 @@
                             ${buildDetailRow('Notes', row.Notes)}
                         </div>
                         ${linkedContactsHtml}
+                    </div>
+                `;
+            } else if (currentMode === 'events') {
+                const eventName = row.Event_Summary || row.Event_ || 'Unknown Event';
+                const initial = eventName.charAt(0).toUpperCase();
+
+                html = `
+                    <div class="profile-card">
+                        <div class="profile-header">
+                            <div class="profile-avatar">${initial}</div>
+                            <div style="flex-grow: 1;">
+                                <h2 class="profile-name">${eventName}</h2>
+                                <p class="profile-type">Event</p>
+                            </div>
+                            ${linkBtn}
+                        </div>
+                        <div class="profile-details">
+                            ${buildDetailRow('Date', row.Date_)}
+                            ${buildDetailRow('Track', row.Track_)}
+                            ${buildDetailRow('Location', row.Location)}
+                            ${buildDetailRow('Notes', row.Notes)}
+                        </div>
+                    </div>
+                `;
+            } else if (currentMode === 'countries') {
+                const countryName = row.Country || 'Unknown Country';
+                const initial = countryName.charAt(0).toUpperCase();
+                html = `
+                    <div class="profile-card">
+                        <div class="profile-header">
+                            <div class="profile-avatar">${initial}</div>
+                            <div style="flex-grow: 1;">
+                                <h2 class="profile-name">${countryName}</h2>
+                                <p class="profile-type">Country</p>
+                            </div>
+                            ${linkBtn}
+                        </div>
+                    </div>
+                `;
+            } else if (currentMode === 'languages') {
+                const languageName = row.Language || 'Unknown Language';
+                const initial = languageName.charAt(0).toUpperCase();
+                html = `
+                    <div class="profile-card">
+                        <div class="profile-header">
+                            <div class="profile-avatar">${initial}</div>
+                            <div style="flex-grow: 1;">
+                                <h2 class="profile-name">${languageName}</h2>
+                                <p class="profile-type">Language</p>
+                            </div>
+                            ${linkBtn}
+                        </div>
                     </div>
                 `;
             }
