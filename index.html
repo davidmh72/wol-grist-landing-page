@@ -343,7 +343,7 @@
 
     <script>
         // --- DEVELOPER NOTE: ALWAYS UPDATE THIS VERSION TAG ON EVERY SAVE ---
-        const WIDGET_VERSION = "1.1.5";
+        const WIDGET_VERSION = "1.1.6";
         console.log(`[Grist Landing Page] Widget Version: ${WIDGET_VERSION}`);
 
         // --- Global State ---
@@ -571,37 +571,37 @@
             filteredData.forEach(row => {
                 const item = document.createElement('div');
                 item.className = 'grid-item';
-                
+                let title = '';
+                let subtitle = '';
+
                 if (currentMode === 'contacts') {
-                    const fullName = row.Contact_ || `${row.First_Name_ || ''} ${row.Last_Name || ''}`.trim() || 'Unknown Contact';
-                    item.innerHTML = `
-                        <div class="grid-item-title">${fullName}</div>
-                        <div class="grid-item-subtitle">${row.Email_ || 'No email provided'}</div>
-                    `;
+                    const orgCount = getLinkedOrganisations(row.id).length;
+                    title = row.Contact_ || `${row.First_Name_ || ''} ${row.Last_Name || ''}`.trim() || 'Unknown Contact';
+                    subtitle = `${orgCount} Organisation${orgCount !== 1 ? 's' : ''}`;
                 } else if (currentMode === 'organisations') {
-                    const orgName = row.Organisation_ || 'Unknown Organisation';
-                    item.innerHTML = `
-                        <div class="grid-item-title">${orgName}</div>
-                        <div class="grid-item-subtitle">${row.Type_ || 'No type specified'}</div>
-                    `;
+                    const contactCount = getLinkedContacts(row.id).length;
+                    title = row.Organisation_ || 'Unknown Organisation';
+                    subtitle = `${contactCount} Contact${contactCount !== 1 ? 's' : ''}`;
                 } else if (currentMode === 'events') {
-                    const eventName = row.Event_Summary || row.Event_ || 'Unknown Event';
-                    item.innerHTML = `
-                        <div class="grid-item-title">${eventName}</div>
-                        <div class="grid-item-subtitle">${row.Track_ || 'No track'}</div>
-                    `;
+                    const participantCount = getEventContacts(row.id).length;
+                    title = row.Event_Summary || row.Event_ || 'Unknown Event';
+                    subtitle = `${participantCount} Participant${participantCount !== 1 ? 's' : ''}`;
                 } else if (currentMode === 'countries') {
-                    item.innerHTML = `
-                        <div class="grid-item-title">${row.Country || 'Unknown Country'}</div>
-                        <div class="grid-item-subtitle">Country</div>
-                    `;
+                    const contactCount = getCountryContacts(row.id).length;
+                    const orgCount = getCountryOrganisations(row.id).length;
+                    title = row.Country || 'Unknown Country';
+                    subtitle = `${contactCount} Contacts, ${orgCount} Orgs`;
                 } else if (currentMode === 'languages') {
-                    item.innerHTML = `
-                        <div class="grid-item-title">${row.Language || 'Unknown Language'}</div>
-                        <div class="grid-item-subtitle">Language</div>
-                    `;
+                    const spokenCount = getLanguageSpokenContacts(row.id).length;
+                    const interestedCount = getLanguageInterestedContacts(row.id).length;
+                    title = row.Language || 'Unknown Language';
+                    subtitle = `${spokenCount} Spoken, ${interestedCount} Interested`;
                 }
 
+                item.innerHTML = `
+                    <div class="grid-item-title">${title}</div>
+                    <div class="grid-item-subtitle">${subtitle}</div>
+                `;
                 item.onclick = () => renderCard(row);
                 gridContainer.appendChild(item);
             });
