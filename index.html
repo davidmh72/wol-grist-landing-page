@@ -318,7 +318,7 @@
 
     <script>
         // --- DEVELOPER NOTE: ALWAYS UPDATE THIS VERSION TAG ON EVERY SAVE ---
-        const WIDGET_VERSION = "1.1.11";
+        const WIDGET_VERSION = "1.1.12";
         console.log(`[Grist Landing Page] Widget Version: ${WIDGET_VERSION}`);
 
         // --- Global State ---
@@ -354,25 +354,22 @@
         });
 
         // Listen for the widget gaining access to data
-        grist.onRecords(async () => {
+        grist.onRecords(async (records, mappings) => {
             // Fetch core tables and the linking table
             try {
-                const contactsRaw = await grist.docApi.fetchTable('Contacts');
-                const orgsRaw = await grist.docApi.fetchTable('Organisations');
-                const contactOrgsRaw = await grist.docApi.fetchTable('ContactOrganisations');
-                const eventsRaw = await grist.docApi.fetchTable('Events');
-                const countriesRaw = await grist.docApi.fetchTable('Countries');
-                const languagesRaw = await grist.docApi.fetchTable('Languages');
-                const contactEventsRaw = await grist.docApi.fetchTable('ContactEvents');
+                // Eager load the most common tables for a fast initial experience
+                const [contactsRaw, orgsRaw, contactOrgsRaw] = await Promise.all([
+                    grist.docApi.fetchTable('Contacts'),
+                    grist.docApi.fetchTable('Organisations'),
+                    grist.docApi.fetchTable('ContactOrganisations')
+                ]);
 
                 // Normalize data structure for easier rendering
                 data.contacts = formatGristData(contactsRaw).sort((a, b) => (a.Contact_ || '').localeCompare(b.Contact_ || ''));
                 data.organisations = formatGristData(orgsRaw).sort((a, b) => (a.Organisation_ || '').localeCompare(b.Organisation_ || ''));
                 data.contactOrganisations = formatGristData(contactOrgsRaw);
-                data.events = formatGristData(eventsRaw).sort((a, b) => (a.Event_Summary || a.Event_ || '').localeCompare(b.Event_Summary || b.Event_ || ''));
-                data.countries = formatGristData(countriesRaw).sort((a, b) => (a.Country || '').localeCompare(b.Country || ''));
-                data.languages = formatGristData(languagesRaw).sort((a, b) => (a.Language || '').localeCompare(b.Language || ''));
-                data.contactEvents = formatGristData(contactEventsRaw);
+                
+                // Other tables will be lazy-loaded in setMode
 
                 loadingIndicator.style.display = 'none';
                 
@@ -454,26 +451,53 @@
 
         // --- UI Logic & Navigation ---
 
-        function setMode(mode) {
+        async function setMode(mode) {
             currentMode = mode;
+            
+            // --- Lazy Loading Logic ---
+            try {
+                // Show loader while we check and potentially fetch data
+                gridContainer.innerHTML = ''; // Clear previous results
+                loadingIndicator.style.display = 'block';
+                loadingIndicator.innerText = `Loading ${mode}...`;
+
+                if (mode === 'events' && data.events.length === 0) {
+                    const [eventsRaw, contactEventsRaw] = await Promise.all([
+                        grist.docApi.fetchTable('Events'),
+                        grist.docApi.fetchTable('ContactEvents')
+                    ]);
+                    data.events = formatGristData(eventsRaw).sort((a, b) => (a.Event_Summary || a.Event_ || '').localeCompare(b.Event_Summary || b.Event_ || ''));
+                    data.contactEvents = formatGristData(contactEventsRaw);
+                } else if (mode === 'countries' && data.countries.length === 0) {
+                    const countriesRaw = await grist.docApi.fetchTable('Countries');
+                    data.countries = formatGristData(countriesRaw).sort((a, b) => (a.Country || '').localeCompare(b.Country || ''));
+                } else if (mode === 'languages' && data.languages.length === 0) {
+                    const languagesRaw = await grist.docApi.fetchTable('Languages');
+                    data.languages = formatGristData(languagesRaw).sort((a, b) => (a.Language || '').localeCompare(b.Language || ''));
+                }
+            } catch (error) {
+                loadingIndicator.innerText = `Error loading ${mode}. Please check permissions.`;
+                console.error(`Grist API Error while fetching ${mode}:`, error);
+                return; // Stop execution if lazy load fails
+            } finally {
+                loadingIndicator.style.display = 'none';
+            }
+
+            // --- UI Update Logic (runs after data is confirmed loaded) ---
             
             // Update Buttons
             [btnContacts, btnOrgs, btnEvents, btnCountries, btnLanguages].forEach(btn => btn.classList.remove('active'));
-            if (mode === 'contacts') {
-                btnContacts.classList.add('active');
-                searchInput.placeholder = "Search contacts by name or email...";
-            } else if (mode === 'organisations') {
-                btnOrgs.classList.add('active');
-                searchInput.placeholder = "Search organisations by name or type...";
-            } else if (mode === 'events') {
-                btnEvents.classList.add('active');
-                searchInput.placeholder = "Search events...";
-            } else if (mode === 'countries') {
-                btnCountries.classList.add('active');
-                searchInput.placeholder = "Search countries...";
-            } else if (mode === 'languages') {
-                btnLanguages.classList.add('active');
-                searchInput.placeholder = "Search languages...";
+            const placeholders = {
+                contacts: "Search contacts by name or email...",
+                organisations: "Search organisations by name or type...",
+                events: "Search events...",
+                countries: "Search countries...",
+                languages: "Search languages..."
+            };
+            const activeBtn = document.getElementById(`btn-${mode}`);
+            if (activeBtn) {
+                activeBtn.classList.add('active');
+                searchInput.placeholder = placeholders[mode];
             }
 
             // Reset Search and Render
