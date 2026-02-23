@@ -28,6 +28,7 @@
             margin: 0;
             padding: 20px;
             box-sizing: border-box;
+            font-size: 16px; /* Base font size increased by 2px */
         }
 
         /* --- Header & Toggle --- */
@@ -52,7 +53,7 @@
             background: none;
             border: none;
             padding: 8px 16px;
-            font-size: 14px;
+            font-size: 16px; /* Increased */
             font-weight: 500;
             color: var(--grist-color-secondary-text);
             border-radius: 6px;
@@ -73,8 +74,8 @@
 
         #search-input {
             width: 100%;
-            padding: 12px 16px;
-            font-size: 16px;
+            padding: 14px 18px; /* Increased */
+            font-size: 18px; /* Increased */
             border: 1px solid var(--grist-color-border);
             border-radius: 8px;
             box-sizing: border-box;
@@ -95,7 +96,7 @@
         }
 
         .grid-item {
-            padding: 16px;
+            padding: 18px; /* Increased */
             border: 1px solid var(--grist-color-border);
             border-radius: 8px;
             background-color: var(--grist-color-bg);
@@ -110,13 +111,13 @@
         }
 
         .grid-item-title {
-            font-size: 16px;
+            font-size: 18px; /* Increased */
             font-weight: 600;
-            margin-bottom: 4px;
+            margin-bottom: 6px; /* Increased */
         }
 
         .grid-item-subtitle {
-            font-size: 14px;
+            font-size: 15px; /* Increased */
             color: var(--grist-color-secondary-text);
         }
 
@@ -136,13 +137,13 @@
             border: none;
             color: var(--grist-color-primary);
             font-weight: 500;
-            font-size: 14px;
+            font-size: 16px; /* Increased */
             cursor: pointer;
             padding: 0;
-            margin-bottom: 16px;
+            margin-bottom: 24px; /* Increased */
             display: flex;
             align-items: center;
-            gap: 4px;
+            gap: 6px; /* Increased */
         }
 
         .btn-back:hover {
@@ -153,7 +154,7 @@
         .profile-card {
             border: 1px solid var(--grist-color-border);
             border-radius: 12px;
-            padding: 24px;
+            padding: 30px; /* Increased */
             background-color: var(--grist-color-bg);
             box-shadow: 0 4px 12px rgba(0,0,0,0.05);
         }
@@ -161,33 +162,33 @@
         .profile-header {
             display: flex;
             align-items: center;
-            gap: 16px;
-            margin-bottom: 24px;
-            padding-bottom: 24px;
+            gap: 20px; /* Increased */
+            margin-bottom: 30px; /* Increased */
+            padding-bottom: 30px; /* Increased */
             border-bottom: 1px solid var(--grist-color-border);
         }
 
         .profile-avatar {
-            width: 64px;
-            height: 64px;
+            width: 72px; /* Increased */
+            height: 72px; /* Increased */
             background-color: var(--grist-color-primary-light);
             color: var(--grist-color-primary-hover);
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 24px;
+            font-size: 28px; /* Increased */
             font-weight: bold;
         }
 
         .profile-name {
-            font-size: 24px;
+            font-size: 26px; /* Increased */
             font-weight: bold;
-            margin: 0 0 4px 0;
+            margin: 0 0 6px 0; /* Increased */
         }
 
         .profile-type {
-            font-size: 14px;
+            font-size: 16px; /* Increased */
             color: var(--grist-color-secondary-text);
             margin: 0;
             text-transform: uppercase;
@@ -197,72 +198,46 @@
         .profile-details {
             display: grid;
             grid-template-columns: 1fr;
-            gap: 16px;
+            gap: 20px; /* Increased */
         }
 
         .detail-row {
             display: flex;
             flex-direction: column;
-            gap: 4px;
+            gap: 6px; /* Increased */
         }
 
         .detail-label {
-            font-size: 12px;
+            font-size: 14px; /* Increased */
             color: var(--grist-color-secondary-text);
             font-weight: 600;
             text-transform: uppercase;
         }
 
         .detail-value {
-            font-size: 15px;
+            font-size: 17px; /* Increased */
             color: var(--grist-color-text);
         }
 
         /* --- Linked Items (Cross References) --- */
         .linked-items {
-            margin-top: 24px;
-            padding-top: 24px;
+            margin-top: 30px; /* Increased */
+            padding-top: 30px; /* Increased */
             border-top: 1px solid var(--grist-color-border);
         }
 
         .linked-items h3 {
-            font-size: 14px;
-            color: var(--grist-color-secondary-text);
-            text-transform: uppercase;
-            margin: 0 0 12px 0;
+            font-size: 18px; /* Increased prominence */
+            color: var(--grist-color-text); /* Stronger color */
+            font-weight: bold; /* Bolder */
+            text-transform: none; /* Less aggressive */
+            margin: 0 0 16px 0; /* Increased spacing */
         }
 
         .linked-items-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
             gap: 16px;
-        }
-
-        .linked-item {
-            display: flex;
-            flex-direction: column;
-            align-items: flex-start;
-            justify-content: center;
-            padding: 16px;
-            border: 1px solid var(--grist-color-border);
-            border-radius: 8px;
-            cursor: pointer;
-            transition: transform 0.1s, box-shadow 0.1s;
-            background-color: var(--grist-color-bg);
-            gap: 8px;
-        }
-
-        .linked-item:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
-            border-color: var(--grist-color-primary);
-        }
-
-        .linked-item-title {
-            font-weight: 600;
-            font-size: 15px;
-            color: var(--grist-color-text);
-            margin-bottom: 4px;
         }
 
         .linked-item-badge {
@@ -343,7 +318,7 @@
 
     <script>
         // --- DEVELOPER NOTE: ALWAYS UPDATE THIS VERSION TAG ON EVERY SAVE ---
-        const WIDGET_VERSION = "1.1.7";
+        const WIDGET_VERSION = "1.1.11";
         console.log(`[Grist Landing Page] Widget Version: ${WIDGET_VERSION}`);
 
         // --- Global State ---
@@ -640,12 +615,19 @@
                     linkedOrgsHtml = `
                         <div class="linked-items">
                             <h3>Linked Organisations</h3>
-                            ${linkedOrgs.map(org => `
-                                <div class="linked-item" onclick="showOrganisation(${org.id})">
-                                    <span class="linked-item-title">${org.Organisation_ || 'Unknown'}</span>
-                                    ${org.isPrimary ? '<span class="linked-item-badge">Primary</span>' : ''}
+                            <div class="linked-items-grid">
+                            ${linkedOrgs.map(org => {
+                                const contactCount = getLinkedContacts(org.id).length;
+                                const subtitle = `${contactCount} Contact${contactCount !== 1 ? 's' : ''}`;
+                                // Using the existing linked-item-badge class and adding a margin
+                                const primaryBadge = org.isPrimary ? `<span class="linked-item-badge" style="display: inline-block; margin-left: 8px;">Primary</span>` : '';
+                                return `
+                                <div class="grid-item" onclick="showOrganisation(${org.id})">
+                                    <div class="grid-item-title">${org.Organisation_ || 'Unknown'}</div>
+                                    <div class="grid-item-subtitle">${subtitle}${primaryBadge}</div>
                                 </div>
-                            `).join('')}
+                            `}).join('')}
+                            </div>
                         </div>
                     `;
                 }
@@ -681,15 +663,21 @@
                     linkedContactsHtml = `
                         <div class="linked-items">
                             <h3>Linked Contacts</h3>
+                            <div class="linked-items-grid">
                             ${linkedContacts.map(contact => {
-                                const contactName = `${contact.First_Name_ || ''} ${contact.Last_Name || ''}`.trim() || 'Unknown';
+                                const contactName = contact.Contact_ || `${contact.First_Name_ || ''} ${contact.Last_Name || ''}`.trim() || 'Unknown';
+                                const orgCount = getLinkedOrganisations(contact.id).length;
+                                const subtitle = `${orgCount} Organisation${orgCount !== 1 ? 's' : ''}`;
+                                // Using the existing linked-item-badge class and adding a margin
+                                const primaryBadge = contact.isPrimary ? `<span class="linked-item-badge" style="display: inline-block; margin-left: 8px;">Primary Contact</span>` : '';
                                 return `
-                                    <div class="linked-item" onclick="showContact(${contact.id})">
-                                        <span class="linked-item-title">${contactName}</span>
-                                        ${contact.isPrimary ? '<span class="linked-item-badge">Primary Contact</span>' : ''}
+                                    <div class="grid-item" onclick="showContact(${contact.id})">
+                                        <div class="grid-item-title">${contactName}</div>
+                                        <div class="grid-item-subtitle">${subtitle}${primaryBadge}</div>
                                     </div>
                                 `;
                             }).join('')}
+                            </div>
                         </div>
                     `;
                 }
@@ -724,14 +712,19 @@
                     eventContactsHtml = `
                         <div class="linked-items">
                             <h3>Participants</h3>
+                            <div class="linked-items-grid">
                             ${eventContacts.map(contact => {
                                 const contactName = contact.Contact_ || `${contact.First_Name_ || ''} ${contact.Last_Name || ''}`.trim() || 'Unknown';
+                                const orgCount = getLinkedOrganisations(contact.id).length;
+                                const subtitle = `${orgCount} Organisation${orgCount !== 1 ? 's' : ''}`;
                                 return `
-                                    <div class="linked-item" onclick="showContact(${contact.id})">
-                                        <span class="linked-item-title">${contactName}</span>
+                                    <div class="grid-item" onclick="showContact(${contact.id})">
+                                        <div class="grid-item-title">${contactName}</div>
+                                        <div class="grid-item-subtitle">${subtitle}</div>
                                     </div>
                                 `;
                             }).join('')}
+                            </div>
                         </div>
                     `;
                 }
@@ -768,14 +761,19 @@
                     countryContactsHtml = `
                         <div class="linked-items">
                             <h3>Contacts in ${countryName}</h3>
+                            <div class="linked-items-grid">
                             ${countryContacts.map(contact => {
                                 const contactName = contact.Contact_ || `${contact.First_Name_ || ''} ${contact.Last_Name || ''}`.trim() || 'Unknown';
+                                const orgCount = getLinkedOrganisations(contact.id).length;
+                                const subtitle = `${orgCount} Organisation${orgCount !== 1 ? 's' : ''}`;
                                 return `
-                                    <div class="linked-item" onclick="showContact(${contact.id})">
-                                        <span class="linked-item-title">${contactName}</span>
+                                    <div class="grid-item" onclick="showContact(${contact.id})">
+                                        <div class="grid-item-title">${contactName}</div>
+                                        <div class="grid-item-subtitle">${subtitle}</div>
                                     </div>
                                 `;
                             }).join('')}
+                            </div>
                         </div>
                     `;
                 }
@@ -785,14 +783,19 @@
                     countryOrgsHtml = `
                         <div class="linked-items">
                             <h3>Organisations in ${countryName}</h3>
+                            <div class="linked-items-grid">
                             ${countryOrgs.map(org => {
                                 const orgName = org.Organisation_ || 'Unknown';
+                                const contactCount = getLinkedContacts(org.id).length;
+                                const subtitle = `${contactCount} Contact${contactCount !== 1 ? 's' : ''}`;
                                 return `
-                                    <div class="linked-item" onclick="showOrganisation(${org.id})">
-                                        <span class="linked-item-title">${orgName}</span>
+                                    <div class="grid-item" onclick="showOrganisation(${org.id})">
+                                        <div class="grid-item-title">${orgName}</div>
+                                        <div class="grid-item-subtitle">${subtitle}</div>
                                     </div>
                                 `;
                             }).join('')}
+                            </div>
                         </div>
                     `;
                 }
@@ -824,14 +827,19 @@
                     spokenContactsHtml = `
                         <div class="linked-items">
                             <h3>Contacts (Spoken Language)</h3>
+                            <div class="linked-items-grid">
                             ${spokenContacts.map(contact => {
                                 const contactName = contact.Contact_ || `${contact.First_Name_ || ''} ${contact.Last_Name || ''}`.trim() || 'Unknown';
+                                const orgCount = getLinkedOrganisations(contact.id).length;
+                                const subtitle = `${orgCount} Organisation${orgCount !== 1 ? 's' : ''}`;
                                 return `
-                                    <div class="linked-item" onclick="showContact(${contact.id})">
-                                        <span class="linked-item-title">${contactName}</span>
+                                    <div class="grid-item" onclick="showContact(${contact.id})">
+                                        <div class="grid-item-title">${contactName}</div>
+                                        <div class="grid-item-subtitle">${subtitle}</div>
                                     </div>
                                 `;
                             }).join('')}
+                            </div>
                         </div>
                     `;
                 }
@@ -841,14 +849,19 @@
                     interestedContactsHtml = `
                         <div class="linked-items">
                             <h3>Contacts (Interested Language)</h3>
+                            <div class="linked-items-grid">
                             ${interestedContacts.map(contact => {
                                 const contactName = contact.Contact_ || `${contact.First_Name_ || ''} ${contact.Last_Name || ''}`.trim() || 'Unknown';
+                                const orgCount = getLinkedOrganisations(contact.id).length;
+                                const subtitle = `${orgCount} Organisation${orgCount !== 1 ? 's' : ''}`;
                                 return `
-                                    <div class="linked-item" onclick="showContact(${contact.id})">
-                                        <span class="linked-item-title">${contactName}</span>
+                                    <div class="grid-item" onclick="showContact(${contact.id})">
+                                        <div class="grid-item-title">${contactName}</div>
+                                        <div class="grid-item-subtitle">${subtitle}</div>
                                     </div>
                                 `;
                             }).join('')}
+                            </div>
                         </div>
                     `;
                 }
