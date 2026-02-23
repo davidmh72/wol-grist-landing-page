@@ -334,7 +334,7 @@
 
     <script>
         // --- DEVELOPER NOTE: ALWAYS UPDATE THIS VERSION TAG ON EVERY SAVE ---
-        const WIDGET_VERSION = "1.1.3";
+        const WIDGET_VERSION = "1.1.4";
         console.log(`[Grist Landing Page] Widget Version: ${WIDGET_VERSION}`);
 
         // --- Global State ---
@@ -345,7 +345,8 @@
             contactOrganisations: [],
             events: [],
             countries: [],
-            languages: []
+            languages: [],
+            contactEvents: []
         };
         let filteredData = [];
 
@@ -378,6 +379,7 @@
                 const eventsRaw = await grist.docApi.fetchTable('Events');
                 const countriesRaw = await grist.docApi.fetchTable('Countries');
                 const languagesRaw = await grist.docApi.fetchTable('Languages');
+                const contactEventsRaw = await grist.docApi.fetchTable('ContactEvents');
 
                 // Normalize data structure for easier rendering
                 data.contacts = formatGristData(contactsRaw).sort((a, b) => (a.Contact_ || '').localeCompare(b.Contact_ || ''));
@@ -386,6 +388,7 @@
                 data.events = formatGristData(eventsRaw).sort((a, b) => (a.Event_Summary || a.Event_ || '').localeCompare(b.Event_Summary || b.Event_ || ''));
                 data.countries = formatGristData(countriesRaw).sort((a, b) => (a.Country || '').localeCompare(b.Country || ''));
                 data.languages = formatGristData(languagesRaw).sort((a, b) => (a.Language || '').localeCompare(b.Language || ''));
+                data.contactEvents = formatGristData(contactEventsRaw);
 
                 loadingIndicator.style.display = 'none';
                 
@@ -431,6 +434,38 @@
                 if (!contact) return null;
                 return { ...contact, isPrimary: link.Primary };
             }).filter(Boolean);
+        }
+
+        function getEventContacts(eventId) {
+            const links = data.contactEvents.filter(ce => ce.Event_ === eventId);
+            return links.map(link => {
+                return data.contacts.find(c => c.id === link.Contact);
+            }).filter(Boolean);
+        }
+
+        function getCountryContacts(countryId) {
+            return data.contacts.filter(c => c.Country === countryId);
+        }
+
+        function getCountryOrganisations(countryId) {
+            return data.organisations.filter(o => o.Country === countryId);
+        }
+
+        function isLanguageInList(gristList, langId) {
+            if (!gristList) return false;
+            // Grist ReferenceList comes as ['L', id1, id2] or just an array
+            if (Array.isArray(gristList)) {
+                return gristList.includes(langId);
+            }
+            return gristList === langId;
+        }
+
+        function getLanguageSpokenContacts(langId) {
+            return data.contacts.filter(c => isLanguageInList(c.Spoken_Language, langId));
+        }
+
+        function getLanguageInterestedContacts(langId) {
+            return data.contacts.filter(c => isLanguageInList(c.Interested_Language, langId));
         }
 
         // --- UI Logic & Navigation ---
@@ -673,6 +708,25 @@
                 const eventName = row.Event_Summary || row.Event_ || 'Unknown Event';
                 const initial = eventName.charAt(0).toUpperCase();
 
+                // Build Linked Contacts list
+                const eventContacts = getEventContacts(row.id);
+                let eventContactsHtml = '';
+                if (eventContacts.length > 0) {
+                    eventContactsHtml = `
+                        <div class="linked-items">
+                            <h3>Participants</h3>
+                            ${eventContacts.map(contact => {
+                                const contactName = contact.Contact_ || `${contact.First_Name_ || ''} ${contact.Last_Name || ''}`.trim() || 'Unknown';
+                                return `
+                                    <div class="linked-item" onclick="showContact(${contact.id})">
+                                        <span class="linked-item-title">${contactName}</span>
+                                    </div>
+                                `;
+                            }).join('')}
+                        </div>
+                    `;
+                }
+
                 html = `
                     <div class="profile-card">
                         <div class="profile-header">
@@ -689,11 +743,51 @@
                             ${buildDetailRow('Location', row.Location)}
                             ${buildDetailRow('Notes', row.Notes)}
                         </div>
+                        ${eventContactsHtml}
                     </div>
                 `;
             } else if (currentMode === 'countries') {
                 const countryName = row.Country || 'Unknown Country';
                 const initial = countryName.charAt(0).toUpperCase();
+                
+                // Build Linked Contacts & Organisations
+                const countryContacts = getCountryContacts(row.id);
+                const countryOrgs = getCountryOrganisations(row.id);
+                
+                let countryContactsHtml = '';
+                if (countryContacts.length > 0) {
+                    countryContactsHtml = `
+                        <div class="linked-items">
+                            <h3>Contacts in ${countryName}</h3>
+                            ${countryContacts.map(contact => {
+                                const contactName = contact.Contact_ || `${contact.First_Name_ || ''} ${contact.Last_Name || ''}`.trim() || 'Unknown';
+                                return `
+                                    <div class="linked-item" onclick="showContact(${contact.id})">
+                                        <span class="linked-item-title">${contactName}</span>
+                                    </div>
+                                `;
+                            }).join('')}
+                        </div>
+                    `;
+                }
+
+                let countryOrgsHtml = '';
+                if (countryOrgs.length > 0) {
+                    countryOrgsHtml = `
+                        <div class="linked-items">
+                            <h3>Organisations in ${countryName}</h3>
+                            ${countryOrgs.map(org => {
+                                const orgName = org.Organisation_ || 'Unknown';
+                                return `
+                                    <div class="linked-item" onclick="showOrganisation(${org.id})">
+                                        <span class="linked-item-title">${orgName}</span>
+                                    </div>
+                                `;
+                            }).join('')}
+                        </div>
+                    `;
+                }
+
                 html = `
                     <div class="profile-card">
                         <div class="profile-header">
@@ -704,11 +798,52 @@
                             </div>
                             ${linkBtn}
                         </div>
+                        ${countryContactsHtml}
+                        ${countryOrgsHtml}
                     </div>
                 `;
             } else if (currentMode === 'languages') {
                 const languageName = row.Language || 'Unknown Language';
                 const initial = languageName.charAt(0).toUpperCase();
+                
+                // Build Linked Contacts for Spoken and Interested
+                const spokenContacts = getLanguageSpokenContacts(row.id);
+                const interestedContacts = getLanguageInterestedContacts(row.id);
+
+                let spokenContactsHtml = '';
+                if (spokenContacts.length > 0) {
+                    spokenContactsHtml = `
+                        <div class="linked-items">
+                            <h3>Contacts (Spoken Language)</h3>
+                            ${spokenContacts.map(contact => {
+                                const contactName = contact.Contact_ || `${contact.First_Name_ || ''} ${contact.Last_Name || ''}`.trim() || 'Unknown';
+                                return `
+                                    <div class="linked-item" onclick="showContact(${contact.id})">
+                                        <span class="linked-item-title">${contactName}</span>
+                                    </div>
+                                `;
+                            }).join('')}
+                        </div>
+                    `;
+                }
+
+                let interestedContactsHtml = '';
+                if (interestedContacts.length > 0) {
+                    interestedContactsHtml = `
+                        <div class="linked-items">
+                            <h3>Contacts (Interested Language)</h3>
+                            ${interestedContacts.map(contact => {
+                                const contactName = contact.Contact_ || `${contact.First_Name_ || ''} ${contact.Last_Name || ''}`.trim() || 'Unknown';
+                                return `
+                                    <div class="linked-item" onclick="showContact(${contact.id})">
+                                        <span class="linked-item-title">${contactName}</span>
+                                    </div>
+                                `;
+                            }).join('')}
+                        </div>
+                    `;
+                }
+
                 html = `
                     <div class="profile-card">
                         <div class="profile-header">
@@ -719,6 +854,8 @@
                             </div>
                             ${linkBtn}
                         </div>
+                        ${spokenContactsHtml}
+                        ${interestedContactsHtml}
                     </div>
                 `;
             }
