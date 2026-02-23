@@ -267,6 +267,29 @@
             letter-spacing: 0.5px;
         }
 
+        /* --- Magic Grist Link --- */
+        .btn-grist-link {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
+            background-color: var(--grist-color-card-bg);
+            color: var(--grist-color-primary);
+            border: 1px solid var(--grist-color-border);
+            text-decoration: none;
+            font-size: 18px;
+            font-weight: bold;
+            transition: all 0.2s;
+            margin-left: auto; /* Push to right */
+        }
+        
+        .btn-grist-link:hover {
+            background-color: var(--grist-color-primary-light);
+            border-color: var(--grist-color-primary);
+        }
+
         /* Loading state */
         #loading-indicator {
             text-align: center;
@@ -307,7 +330,7 @@
 
     <script>
         // --- DEVELOPER NOTE: ALWAYS UPDATE THIS VERSION TAG ON EVERY SAVE ---
-        const WIDGET_VERSION = "1.1.1";
+        const WIDGET_VERSION = "1.1.2";
         console.log(`[Grist Landing Page] Widget Version: ${WIDGET_VERSION}`);
 
         // --- Global State ---
@@ -344,8 +367,8 @@
                 const contactOrgsRaw = await grist.docApi.fetchTable('ContactOrganisations');
 
                 // Normalize data structure for easier rendering
-                data.contacts = formatGristData(contactsRaw);
-                data.organisations = formatGristData(orgsRaw);
+                data.contacts = formatGristData(contactsRaw).sort((a, b) => (a.Contact_ || '').localeCompare(b.Contact_ || ''));
+                data.organisations = formatGristData(orgsRaw).sort((a, b) => (a.Organisation_ || '').localeCompare(b.Organisation_ || ''));
                 data.contactOrganisations = formatGristData(contactOrgsRaw);
 
                 loadingIndicator.style.display = 'none';
@@ -475,7 +498,7 @@
                 item.className = 'grid-item';
                 
                 if (currentMode === 'contacts') {
-                    const fullName = `${row.First_Name_ || ''} ${row.Last_Name || ''}`.trim() || 'Unknown Contact';
+                    const fullName = row.Contact_ || `${row.First_Name_ || ''} ${row.Last_Name || ''}`.trim() || 'Unknown Contact';
                     item.innerHTML = `
                         <div class="grid-item-title">${fullName}</div>
                         <div class="grid-item-subtitle">${row.Email_ || 'No email provided'}</div>
@@ -494,15 +517,30 @@
             });
         }
 
+        function extractGristLink(text) {
+            if (!text) return null;
+            // Handle Grist's markdown hyperlink formula: [label](url)appendedText
+            const mdMatch = text.match(/\]\(([^)]+)\)(.*)/);
+            if (mdMatch) {
+                return mdMatch[1] + (mdMatch[2] || '');
+            }
+            if (text.startsWith('http') || text.startsWith('#')) return text;
+            return null;
+        }
+
         function renderCard(row) {
             // Hide landing, show card
             landingView.style.display = 'none';
             cardContainer.style.display = 'block';
 
             let html = '';
+            
+            // Extract the magic Grist jump link
+            const linkUrl = extractGristLink(row.Link);
+            const linkBtn = linkUrl ? `<a href="${linkUrl}" target="_top" class="btn-grist-link" title="Open Full Record in Grist">↗</a>` : '';
 
             if (currentMode === 'contacts') {
-                const fullName = `${row.First_Name_ || ''} ${row.Last_Name || ''}`.trim() || 'Unknown Contact';
+                const fullName = row.Contact_ || `${row.First_Name_ || ''} ${row.Last_Name || ''}`.trim() || 'Unknown Contact';
                 const initial = fullName.charAt(0).toUpperCase();
                 
                 // Build Linked Organisations list
@@ -526,10 +564,11 @@
                     <div class="profile-card">
                         <div class="profile-header">
                             <div class="profile-avatar">${initial}</div>
-                            <div>
+                            <div style="flex-grow: 1;">
                                 <h2 class="profile-name">${fullName}</h2>
                                 <p class="profile-type">Contact Profile</p>
                             </div>
+                            ${linkBtn}
                         </div>
                         <div class="profile-details">
                             ${buildDetailRow('Email', row.Email_ ? `<a href="mailto:${row.Email_}">${row.Email_}</a>` : '')}
@@ -569,10 +608,11 @@
                     <div class="profile-card">
                         <div class="profile-header">
                             <div class="profile-avatar">${initial}</div>
-                            <div>
+                            <div style="flex-grow: 1;">
                                 <h2 class="profile-name">${orgName}</h2>
                                 <p class="profile-type">${row.Type_ || 'Organisation'}</p>
                             </div>
+                            ${linkBtn}
                         </div>
                         <div class="profile-details">
                             ${buildDetailRow('Website', row.Website ? `<a href="${row.Website}" target="_blank">${row.Website}</a>` : '')}
