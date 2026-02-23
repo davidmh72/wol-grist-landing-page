@@ -218,6 +218,55 @@
             color: var(--grist-color-text);
         }
 
+        /* --- Linked Items (Cross References) --- */
+        .linked-items {
+            margin-top: 24px;
+            padding-top: 24px;
+            border-top: 1px solid var(--grist-color-border);
+        }
+
+        .linked-items h3 {
+            font-size: 14px;
+            color: var(--grist-color-secondary-text);
+            text-transform: uppercase;
+            margin: 0 0 12px 0;
+        }
+
+        .linked-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 16px;
+            border: 1px solid var(--grist-color-border);
+            border-radius: 8px;
+            margin-bottom: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            background-color: var(--grist-color-bg);
+        }
+
+        .linked-item:hover {
+            border-color: var(--grist-color-primary);
+            background-color: var(--grist-color-primary-light);
+        }
+
+        .linked-item-title {
+            font-weight: 600;
+            font-size: 15px;
+            color: var(--grist-color-text);
+        }
+
+        .linked-item-badge {
+            background-color: var(--grist-color-primary);
+            color: white;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
         /* Loading state */
         #loading-indicator {
             text-align: center;
@@ -261,7 +310,8 @@
         let currentMode = 'contacts'; // 'contacts' or 'organisations'
         let data = {
             contacts: [],
-            organisations: []
+            organisations: [],
+            contactOrganisations: []
         };
         let filteredData = [];
 
@@ -283,15 +333,16 @@
 
         // Listen for the widget gaining access to data
         grist.onRecords(async () => {
-            // Because this widget is tied to 'Custom' and we need TWO tables,
-            // we use docApi.fetchTable() to pull the full datasets into memory.
+            // Fetch core tables and the linking table
             try {
                 const contactsRaw = await grist.docApi.fetchTable('Contacts');
                 const orgsRaw = await grist.docApi.fetchTable('Organisations');
+                const contactOrgsRaw = await grist.docApi.fetchTable('ContactOrganisations');
 
                 // Normalize data structure for easier rendering
                 data.contacts = formatGristData(contactsRaw);
                 data.organisations = formatGristData(orgsRaw);
+                data.contactOrganisations = formatGristData(contactOrgsRaw);
 
                 loadingIndicator.style.display = 'none';
                 
@@ -303,8 +354,7 @@
             }
         });
 
-        // Helper to convert Grist's columnar data { Name: [a,b], Email: [c,d] } 
-        // into an array of row objects [{Name: a, Email: c}, {Name: b, Email: d}]
+        // Helper to convert Grist's columnar data
         function formatGristData(gristTable) {
             if (!gristTable.id) return [];
             const rows = [];
@@ -320,7 +370,27 @@
             return rows;
         }
 
-        // --- UI Logic ---
+        // --- Data Relationship Helpers ---
+
+        function getLinkedOrganisations(contactId) {
+            const links = data.contactOrganisations.filter(co => co.Contact === contactId);
+            return links.map(link => {
+                const org = data.organisations.find(o => o.id === link.Organisation);
+                if (!org) return null;
+                return { ...org, isPrimary: link.Primary };
+            }).filter(Boolean); // remove nulls if org was deleted
+        }
+
+        function getLinkedContacts(orgId) {
+            const links = data.contactOrganisations.filter(co => co.Organisation === orgId);
+            return links.map(link => {
+                const contact = data.contacts.find(c => c.id === link.Contact);
+                if (!contact) return null;
+                return { ...contact, isPrimary: link.Primary };
+            }).filter(Boolean);
+        }
+
+        // --- UI Logic & Navigation ---
 
         function setMode(mode) {
             currentMode = mode;
@@ -341,6 +411,29 @@
             filteredData = [...data[currentMode]];
             renderGrid();
             showLanding();
+        }
+
+        function showContact(contactId) {
+            const contact = data.contacts.find(c => c.id === contactId);
+            if (contact) {
+                // Ensure UI reflects the correct mode
+                btnContacts.classList.add('active');
+                btnOrgs.classList.remove('active');
+                currentMode = 'contacts';
+                searchInput.placeholder = "Search contacts by name or email...";
+                renderCard(contact);
+            }
+        }
+
+        function showOrganisation(orgId) {
+            const org = data.organisations.find(o => o.id === orgId);
+            if (org) {
+                btnOrgs.classList.add('active');
+                btnContacts.classList.remove('active');
+                currentMode = 'organisations';
+                searchInput.placeholder = "Search organisations by name or type...";
+                renderCard(org);
+            }
         }
 
         function handleSearch() {
@@ -383,15 +476,16 @@
                         <div class="grid-item-title">${fullName}</div>
                         <div class="grid-item-subtitle">${row.Email_ || 'No email provided'}</div>
                     `;
+                    item.onclick = () => renderCard(row);
                 } else {
                     const orgName = row.Organisation_ || 'Unknown Organisation';
                     item.innerHTML = `
                         <div class="grid-item-title">${orgName}</div>
                         <div class="grid-item-subtitle">${row.Type_ || 'No type specified'}</div>
                     `;
+                    item.onclick = () => renderCard(row);
                 }
 
-                item.onclick = () => renderCard(row);
                 gridContainer.appendChild(item);
             });
         }
@@ -407,6 +501,23 @@
                 const fullName = `${row.First_Name_ || ''} ${row.Last_Name || ''}`.trim() || 'Unknown Contact';
                 const initial = fullName.charAt(0).toUpperCase();
                 
+                // Build Linked Organisations list
+                const linkedOrgs = getLinkedOrganisations(row.id);
+                let linkedOrgsHtml = '';
+                if (linkedOrgs.length > 0) {
+                    linkedOrgsHtml = `
+                        <div class="linked-items">
+                            <h3>Linked Organisations</h3>
+                            ${linkedOrgs.map(org => `
+                                <div class="linked-item" onclick="showOrganisation(${org.id})">
+                                    <span class="linked-item-title">${org.Organisation_ || 'Unknown'}</span>
+                                    ${org.isPrimary ? '<span class="linked-item-badge">Primary</span>' : ''}
+                                </div>
+                            `).join('')}
+                        </div>
+                    `;
+                }
+
                 html = `
                     <div class="profile-card">
                         <div class="profile-header">
@@ -417,15 +528,38 @@
                             </div>
                         </div>
                         <div class="profile-details">
-                            ${buildDetailRow('Email', row.Email_)}
+                            ${buildDetailRow('Email', row.Email_ ? `<a href="mailto:${row.Email_}">${row.Email_}</a>` : '')}
                             ${buildDetailRow('Phone', row.Phone)}
                             ${buildDetailRow('Address', row.Address)}
+                            ${buildDetailRow('Source', row.Source)}
+                            ${buildDetailRow('Notes', row.Notes)}
                         </div>
+                        ${linkedOrgsHtml}
                     </div>
                 `;
             } else {
                 const orgName = row.Organisation_ || 'Unknown Organisation';
                 const initial = orgName.charAt(0).toUpperCase();
+
+                // Build Linked Contacts list
+                const linkedContacts = getLinkedContacts(row.id);
+                let linkedContactsHtml = '';
+                if (linkedContacts.length > 0) {
+                    linkedContactsHtml = `
+                        <div class="linked-items">
+                            <h3>Linked Contacts</h3>
+                            ${linkedContacts.map(contact => {
+                                const contactName = `${contact.First_Name_ || ''} ${contact.Last_Name || ''}`.trim() || 'Unknown';
+                                return `
+                                    <div class="linked-item" onclick="showContact(${contact.id})">
+                                        <span class="linked-item-title">${contactName}</span>
+                                        ${contact.isPrimary ? '<span class="linked-item-badge">Primary Contact</span>' : ''}
+                                    </div>
+                                `;
+                            }).join('')}
+                        </div>
+                    `;
+                }
 
                 html = `
                     <div class="profile-card">
@@ -438,9 +572,11 @@
                         </div>
                         <div class="profile-details">
                             ${buildDetailRow('Website', row.Website ? `<a href="${row.Website}" target="_blank">${row.Website}</a>` : '')}
-                            ${buildDetailRow('Address', row.Address)}
                             ${buildDetailRow('Description', row.Description)}
+                            ${buildDetailRow('Address', row.Address)}
+                            ${buildDetailRow('Notes', row.Notes)}
                         </div>
+                        ${linkedContactsHtml}
                     </div>
                 `;
             }
