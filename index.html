@@ -133,22 +133,26 @@
         }
 
         .btn-back {
-            background: none;
-            border: none;
-            color: var(--grist-color-primary);
-            font-weight: 500;
-            font-size: 16px; /* Increased */
+            background: var(--grist-color-card-bg); /* Light grey background */
+            border: 1px solid var(--grist-color-border); /* Subtle border */
+            color: var(--grist-color-text); /* Standard text color */
+            font-weight: 600; /* Bolder */
+            font-size: 16px;
             cursor: pointer;
-            padding: 0;
-            margin-bottom: 24px; /* Increased */
-            display: flex;
+            padding: 10px 16px; /* More padding */
+            margin-bottom: 24px;
+            display: inline-flex; /* Use inline-flex */
             align-items: center;
-            gap: 6px; /* Increased */
+            gap: 8px; /* More gap */
+            border-radius: 8px; /* Rounded corners */
+            transition: all 0.2s;
         }
 
         .btn-back:hover {
-            text-decoration: underline;
-            color: var(--grist-color-primary-hover);
+            background-color: var(--grist-color-border); /* Darker on hover */
+            color: var(--grist-color-text);
+            border-color: var(--grist-color-secondary-text);
+            text-decoration: none; /* Remove underline */
         }
 
         .profile-card {
@@ -319,7 +323,7 @@
 
     <script>
         // --- DEVELOPER NOTE: ALWAYS UPDATE THIS VERSION TAG ON EVERY SAVE ---
-        const WIDGET_VERSION = "1.1.13";
+        const WIDGET_VERSION = "1.1.14";
         console.log(`[Grist Landing Page] Widget Version: ${WIDGET_VERSION}`);
 
         // --- Global State ---
@@ -530,8 +534,8 @@
             const contact = data.contacts.find(c => c.id === contactId);
             if (contact) {
                 // Ensure UI reflects the correct mode
+                [btnContacts, btnOrgs, btnEvents, btnCountries, btnLanguages, btnGroups].forEach(btn => btn && btn.classList.remove('active'));
                 btnContacts.classList.add('active');
-                btnOrgs.classList.remove('active');
                 currentMode = 'contacts';
                 searchInput.placeholder = "Search contacts by name or email...";
                 renderCard(contact);
@@ -541,8 +545,8 @@
         function showOrganisation(orgId) {
             const org = data.organisations.find(o => o.id === orgId);
             if (org) {
+                [btnContacts, btnOrgs, btnEvents, btnCountries, btnLanguages, btnGroups].forEach(btn => btn && btn.classList.remove('active'));
                 btnOrgs.classList.add('active');
-                btnContacts.classList.remove('active');
                 currentMode = 'organisations';
                 searchInput.placeholder = "Search organisations by name or type...";
                 renderCard(org);
@@ -1005,6 +1009,11 @@
         function showLanding() {
             cardContainer.style.display = 'none';
             landingView.style.display = 'block';
+            // When going back, we should see the list for the current mode.
+            // Reset search and render the grid for the current mode.
+            searchInput.value = '';
+            filteredData = [...data[currentMode]]; // Reload the full list
+            renderGrid();
         }
 
     </script>
