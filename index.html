@@ -530,6 +530,17 @@
             }
         }
 
+        function showGroup(groupId) {
+            const group = data.groups.find(g => g.id === groupId);
+            if (group) {
+                [btnContacts, btnOrgs, btnEvents, btnCountries, btnLanguages, btnGroups].forEach(btn => btn && btn.classList.remove('active'));
+                btnGroups.classList.add('active');
+                currentMode = 'groups';
+                searchInput.placeholder = "Search groups by name...";
+                renderCard(group);
+            }
+        }
+
         function handleSearch() {
             const query = searchInput.value.toLowerCase();
             const currentList = data[currentMode];
@@ -553,6 +564,10 @@
                         return (row.Country || '').toLowerCase().includes(query);
                     } else if (currentMode === 'languages') {
                         return (row.Language || '').toLowerCase().includes(query);
+                    } else if (currentMode === 'groups') {
+                        const groupName = (row.Group_ || '').toLowerCase();
+                        const desc = (row.Description_ || '').toLowerCase();
+                        return groupName.includes(query) || desc.includes(query);
                     }
                 });
             }
@@ -595,6 +610,10 @@
                     const interestedCount = getLanguageInterestedContacts(row.id).length;
                     title = row.Language || 'Unknown Language';
                     subtitle = `${spokenCount} Spoken, ${interestedCount} Interested`;
+                } else if (currentMode === 'groups') {
+                    const contactCount = getGroupContacts(row.id).length;
+                    title = row.Group_ || 'Unknown Group';
+                    subtitle = `${contactCount} Contact${contactCount !== 1 ? 's' : ''}`;
                 }
 
                 item.innerHTML = `
@@ -902,6 +921,51 @@
                         </div>
                         ${spokenContactsHtml}
                         ${interestedContactsHtml}
+                    </div>
+                `;
+            } else if (currentMode === 'groups') {
+                const groupName = row.Group_ || 'Unknown Group';
+                const initial = groupName.charAt(0).toUpperCase();
+
+                // Build Linked Contacts list
+                const groupContacts = getGroupContacts(row.id);
+                let groupContactsHtml = '';
+                if (groupContacts.length > 0) {
+                    groupContactsHtml = `
+                        <div class="linked-items">
+                            <h3>Members</h3>
+                            <div class="linked-items-grid">
+                            ${groupContacts.map(contact => {
+                                const contactName = contact.Contact_ || `${contact.First_Name_ || ''} ${contact.Last_Name || ''}`.trim() || 'Unknown';
+                                const orgCount = getLinkedOrganisations(contact.id).length;
+                                const subtitle = `${orgCount} Organisation${orgCount !== 1 ? 's' : ''}`;
+                                return `
+                                    <div class="grid-item" onclick="showContact(${contact.id})">
+                                        <div class="grid-item-title">${contactName}</div>
+                                        <div class="grid-item-subtitle">${subtitle}</div>
+                                    </div>
+                                `;
+                            }).join('')}
+                            </div>
+                        </div>
+                    `;
+                }
+
+                html = `
+                    <div class="profile-card">
+                        <div class="profile-header">
+                            <div class="profile-avatar">${initial}</div>
+                            <div style="flex-grow: 1;">
+                                <h2 class="profile-name">${groupName}</h2>
+                                <p class="profile-type">Group</p>
+                            </div>
+                            ${linkBtn}
+                        </div>
+                        <div class="profile-details">
+                            ${buildDetailRow('Description', row.Description_)}
+                            ${buildDetailRow('Notes', row.Notes)}
+                        </div>
+                        ${groupContactsHtml}
                     </div>
                 `;
             }
