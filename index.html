@@ -296,6 +296,7 @@
                     <button id="btn-events" class="toggle-btn" onclick="setMode('events')">Events</button>
                     <button id="btn-countries" class="toggle-btn" onclick="setMode('countries')">Countries</button>
                     <button id="btn-languages" class="toggle-btn" onclick="setMode('languages')">Languages</button>
+                    <button id="btn-groups" class="toggle-btn" onclick="setMode('groups')">Groups</button>
                 </div>
                 
                 <div class="search-container">
@@ -318,7 +319,7 @@
 
     <script>
         // --- DEVELOPER NOTE: ALWAYS UPDATE THIS VERSION TAG ON EVERY SAVE ---
-        const WIDGET_VERSION = "1.1.12";
+        const WIDGET_VERSION = "1.1.13";
         console.log(`[Grist Landing Page] Widget Version: ${WIDGET_VERSION}`);
 
         // --- Global State ---
@@ -330,7 +331,9 @@
             events: [],
             countries: [],
             languages: [],
-            contactEvents: []
+            contactEvents: [],
+            groups: [],
+            contactGroups: []
         };
         let filteredData = [];
 
@@ -340,6 +343,7 @@
         const btnEvents = document.getElementById('btn-events');
         const btnCountries = document.getElementById('btn-countries');
         const btnLanguages = document.getElementById('btn-languages');
+        const btnGroups = document.getElementById('btn-groups');
         const searchInput = document.getElementById('search-input');
         const gridContainer = document.getElementById('grid-container');
         const landingView = document.getElementById('landing-view');
@@ -449,6 +453,13 @@
             return data.contacts.filter(c => isLanguageInList(c.Interested_Language, langId));
         }
 
+        function getGroupContacts(groupId) {
+            const links = data.contactGroups.filter(cg => cg.Group_ === groupId);
+            return links.map(link => {
+                return data.contacts.find(c => c.id === link.Contact_);
+            }).filter(Boolean);
+        }
+
         // --- UI Logic & Navigation ---
 
         async function setMode(mode) {
@@ -474,6 +485,13 @@
                 } else if (mode === 'languages' && data.languages.length === 0) {
                     const languagesRaw = await grist.docApi.fetchTable('Languages');
                     data.languages = formatGristData(languagesRaw).sort((a, b) => (a.Language || '').localeCompare(b.Language || ''));
+                } else if (mode === 'groups' && data.groups.length === 0) {
+                    const [groupsRaw, contactGroupsRaw] = await Promise.all([
+                        grist.docApi.fetchTable('Groups'),
+                        grist.docApi.fetchTable('ContactGroups')
+                    ]);
+                    data.groups = formatGristData(groupsRaw).sort((a, b) => (a.Group_ || '').localeCompare(b.Group_ || ''));
+                    data.contactGroups = formatGristData(contactGroupsRaw);
                 }
             } catch (error) {
                 loadingIndicator.innerText = `Error loading ${mode}. Please check permissions.`;
@@ -486,13 +504,14 @@
             // --- UI Update Logic (runs after data is confirmed loaded) ---
             
             // Update Buttons
-            [btnContacts, btnOrgs, btnEvents, btnCountries, btnLanguages].forEach(btn => btn.classList.remove('active'));
+            [btnContacts, btnOrgs, btnEvents, btnCountries, btnLanguages, btnGroups].forEach(btn => btn && btn.classList.remove('active'));
             const placeholders = {
                 contacts: "Search contacts by name or email...",
                 organisations: "Search organisations by name or type...",
                 events: "Search events...",
                 countries: "Search countries...",
-                languages: "Search languages..."
+                languages: "Search languages...",
+                groups: "Search groups by name..."
             };
             const activeBtn = document.getElementById(`btn-${mode}`);
             if (activeBtn) {
